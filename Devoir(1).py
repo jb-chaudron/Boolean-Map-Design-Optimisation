@@ -13,9 +13,13 @@ import csv
 
 
 
+##%Initialisation of the parameters
 
+#Possible formes and colors
 pool_forme=['sqr','circle','triangle']
 pool_col = [[255,0.5,0.5],[0.5,255,0.5],[0.5,0.5,255],[255,255,0.5]]
+
+#?
 t_init_per= 0
 proc=False
 x=0
@@ -33,34 +37,44 @@ pool_pos =[[pos_targ[0]-0.15,pos_targ[1]+0.15],[pos_targ[0]+0.15,pos_targ[1]+0.1
 test_proc_couleur = 10
 proc=10
 
-tabl_couleur = pd.DataFrame(index=['RG','RD','NRG','NRD'],columns=['Red','Green','Blue','Yellow'])
-df = pd.DataFrame(columns=['sexe','age','n_essai','rt','perf','obj','clr_dép','clr_arriv','clr_target'])
-
-win = visual.Window([800,800],color=(256,256,256),fullscr=False,monitor="testMonitor")
-for i,j in itertools.product(tabl_couleur.index,tabl_couleur.columns):
-    tabl_couleur.loc[i,j] = [1,1]
-    
-"""
+##In order to keep track of the data
 if not os.path.exists('output.csv'):
     df = pd.DataFrame(columns=['sexe','age','n_essai','rt','perf','obj','clr_dép','clr_arriv','clr_target'])
 else:
     df = pd.read_csv('output.csv')
-"""
-df = pd.DataFrame(columns=['sexe','age','n_essai','rt','perf','obj','clr_dép','clr_arriv','clr_target'])
+tabl_couleur = pd.DataFrame(index=['RG','RD','NRG','NRD'],columns=['Red','Green','Blue','Yellow'])
+
+
+#Initialisation of the window
+win = visual.Window([800,800],color=(256,256,256),fullscr=False,monitor="testMonitor")
+for i,j in itertools.product(tabl_couleur.index,tabl_couleur.columns):
+    tabl_couleur.loc[i,j] = [1,1]
+
+
+##% Collecting some information on the subject (Male/Female, Age)
+#Text to be displayed
 text1='Entrez H ou F si vous êtes un homme ou une femme'
 text2='Entrez votre age'
 
+#Asking for the Sexe
 text1_stim=visual.TextStim(win,text=text1,color=(0,0,0))
 text1_stim.draw()
 win.flip()
+#Wait for the answer
 sexe = event.waitKeys(maxWait=5.0,keyList=["h","f"])
+
+#Asking for the age
 text1_stim=visual.TextStim(win,text=text2,color=(0,0,0))
 text1_stim.draw()
 win.flip()
+#Wait for the answer
 age=event.waitKeys(maxWait=5.0,keyList=['0','1','2','3','4','5','6','7','8','9'])
 
+
 target = 0
-for a in range(5):
+for a in range(5): #Number of trials
+    
+    #Initialisation of the target
     t_targ = time.time()+20
     t_init_per=time.time()+20
     classor=0
@@ -72,62 +86,82 @@ for a in range(5):
     t0 = time.time()
     proc=10
     
-    #Une boucle pour produire les distracteurs
+    #Loop for distractors production
     for i in range(len(distracteur)):
-        """ici on attribut une des trois formes aux objets distracteurs"""
-        pool_dis[i] = random.choice(pool_forme)
-        clr = random.choice(pool_col)
+        """Attribution of one of the three possible forms, to each distractors"""
+        pool_dis[i] = random.choice(pool_forme) #Choose the form
+        clr = random.choice(pool_col) #Choose the color
+        
+        #Create the object to be displayed, based on color and form
         distracteur[i] = fct.Forme(pool_dis[i],clr,pool_pos[i],win)
         distracteur[i].set_forme()
         distracteur[i].set_couleur()
     
     
-    #Ensuite on positionne les objets au hasard sur l'espace
+    #Place the object at random over the screen
     esp_choix=np.linspace(-0.7,0.7) #Ici on a les limites de l'espace de coordonées cartésiennes
     
-    x_coord = random.choice(esp_choix) # Ici on choisit une coordonées "x" et une "y" au hasard qui seront les points d'arrivé
+    # Choose (x,y) coordinate that will serve as starting point for the target
+    x_coord = random.choice(esp_choix)
     y_coord = random.choice(esp_choix)
     target.position = (x_coord,y_coord)
     pos_targ[0],pos_targ[1] = x_coord,y_coord
+    
+    #Set target attributes
     target.set_forme()
     target.set_couleur()
     target.set_pos()
-    #Une fois qu'on a mis à jour la position de la cible on met à jours les positions des distracteurs
+    
+    #Update Distractors positions
     for i in range(len(distracteur)):
         pool_pos =[[pos_targ[0]-0.15,pos_targ[1]+0.15],[pos_targ[0]+0.15,pos_targ[1]+0.15],[pos_targ[0],pos_targ[1]-0.15]]
         distracteur[i].position = pool_pos[i]
         distracteur[i].set_pos()
+    
+    #Compute the path of the target, with n steps
     x,y = fct.mouvement(target.position[0],target.position[1])
     
-    
+    #Experiment
     while exp==1:
-        if cmpt < len(x):
+        if cmpt < len(x):  #If we haven't done all the steps choosed by the fct.mouvement function
+            
+            #Update the target position with the next step of the path
             target.position=[x[cmpt],y[cmpt]]
             target.set_pos()
+            
+            #Update the distractors positions
             for i in range(len(distracteur)):
                 pool_pos =[[target.position[0]-0.2,target.position[1]+0.2],[target.position[0]+0.2,target.position[1]+0.2],[target.position[0],target.position[1]-0.2]]
                 distracteur[i].position = pool_pos[i]
                 distracteur[i].set_pos()
             cmpt+=1
-        elif cmpt != 0 :
+        elif cmpt != 0 : 
             x,y=fct.mouvement(target.position[0],target.position[1])
             cmpt = 0
         else:
             pass
             
-            
+        #Ask for a possible subject reponse
         touche = event.getKeys(keyList = ['k'])
-        if random.choice(range(100)) in range(5) and not proc2 :
+        
+        
+        #Launch, with p=0.05, the event "proc 2" if it hasn't happend yet
+        if (random.choice(range(100)) in range(5)) and (not proc2) :
+            #keep track of the time
             t_init_per = time.time()
+            
+            #Choose one of the three distractors and update it's color
             xch = random.choice([0,1,2])
-            coulp_init = distracteur[xch].couleur
+            coulp_init = distracteur[xch].couleur #Note the original color
             coulzer = fct.couleur(tabl_couleur)
             distracteur[xch].couleur=(coulzer[0])
             distracteur[xch].set_couleur()
-            coulp_nouv = distracteur[xch].couleur
+            coulp_nouv = distracteur[xch].couleur #Note the newx color
             proc2=True
         else:
             pass
+        
+        #Launch, with p=0.005, the event "proc 1" which change the target's color
         if random.choice(range(200)) == 1 and not proc1 :
             coult_init = target.couleur
             coult_fin=fct.couleur(tabl_couleur)
@@ -140,8 +174,11 @@ for a in range(5):
                 t0 = time.time() - 2.8
         else:
             pass
+        
+        #Shows the modifications
         win.flip()
         core.wait(0.00005)
+        #Asks for any key press
         esp_test = event.getKeys(keyList=['s'])
         test_lgr = time.time()-t0
         rt = time.time()-t_targ
