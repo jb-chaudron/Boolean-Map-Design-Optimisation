@@ -5,6 +5,8 @@ import colorsys as clrs
 import scipy.stats as st 
 import random
 import math
+from psychopy import visual, core, event
+
 class Forme(object):
 	"""Il s'agit d'une fonction qui va permettre de générer la forme et la couleur d'un objet quand on lui donnera
 	les attribut qui nous intéressent. Comme ça, en recevant la forme et la couleur de l'objet, la fonction génèrera toute seule l'objet
@@ -15,32 +17,34 @@ class Forme(object):
 	On peut aussi dire x = ['square','circle','triangle','star'] et y =['red','green','blue','yellow'] et ensuite,
 	Forme(x.randomChoice,y.randomChoice). Comme ça on a des objets tiré au hasard qui ont une des quatres formes et une des quatres couleurs.
 	"""
-	def __init__(self, forme, couleur,position):
+	def __init__(self, forme, couleur,position,win):
 		self.forme = forme
 		self.couleur = couleur
 		self.position = position
 		self.image = 0
+		self.win = win
 
 	"""Cette fonction attribut à un objet une couleur particulière"""
 	def set_couleur(self):
-		self.image.fillColor(self.couleur)
+		self.image.fillColorSpace='rgb255'
+		self.image.fillColor =self.couleur
 
 	"""Cette fonction attribut à un objet une forme particulière"""
 	def set_forme(self):
-		if forme == 'sqr':
-			self.image = visual.ShapeStim(win,vertices = (0.2,0.2),(0,0.2),(0,0),(0.2,0))
+		if self.forme == 'sqr':
+			self.image = visual.ShapeStim(self.win,vertices = [(0.1,0.1),(0,0.1),(0,0),(0.1,0)])
 			self.image.draw()
-		elif forme == 'circle':
-			self.image = visual.Circle(win, radius=0.150, edges=50)
+		elif self.forme == 'circle':
+			self.image = visual.Circle(self.win, radius=0.075, edges=50)
 			self.image.draw()
-		elif forme == 'triangle':
-			self.image = visual.Circle(win, radius=0.2, edges = 3)
+		elif self.forme == 'triangle':
+			self.image = visual.Circle(self.win, radius=0.075, edges = 3)
 			self.image.draw()
 
 	""" La fonction position détermine la position de l'objet par rapport à l'objet central, on déterminera 3 ou 4 position selon que l'on
 		intègre l'étoile ou non"""
 	def set_pos(self):
-		self.image.pos(self.position)
+		self.image.pos= (self.position)
 		self.image.draw()
 
 
@@ -54,8 +58,8 @@ des sujets"""
 
 def couleur(tabl,colo=None):
 	#Ça sert à poser la moyenne en terme de RGB, ça servira pour la traduction rouge-0 = RGB(255,0,0)
-	RGB = {'R':[255,0,0],'V':(0,255,0),'B':(0,0,255),'J':(255,255,0)}
-	conjug = {'R':'V','V':'R','B':'J','J':'B'}
+	RGB = {'Red':[255,0,0],'Green':[0,255,0],'Blue':[0,0,255],'Yellow':[255,255,0]}
+	conjug = {'Red':'Green','Green':'Red','Blue':'Yellow','Yellow':'Blue'}
 	op = {'RG':'NRG','RD':'NRD','NRG':'RG','NRD':'RD'}
 	rd_col = 0
 	if colo == None:
@@ -78,13 +82,9 @@ def couleur(tabl,colo=None):
 		L'écart type : Correspond à un écart type tiré au hasard selon une distribution gamma inverse qui code la probabilité
 		de l'écart type selon un modèle hierarchique bayesien"""
 	
-	mean = clrs.rgb_to_hls(RGB[chx_col][0],RGB[chx_col][1],RGB[chx_col][2])
+	mean = clrs.rgb_to_hls(RGB[chx_col[0]][0],RGB[chx_col[0]][1],RGB[chx_col[0]][2])
 	
-	for l in tabl.loc[chx_dist,chx_col]:
-		for m in l:
-			print(m)
-	
-	car_ecart= sum([(x-mean[0])*(x-mean[0]) for x in tabl.loc[chx_dist,chx_col][0]])/2
+	car_ecart= sum([(x-mean[0])*(x-mean[0]) for x in tabl.loc[chx_dist[0],chx_col[0]]])/2
 	
 	ectp = [10000]
 	while st.invgamma.sf(x=ectp[0],a=len(tabl.loc[chx_dist,chx_col])/2,scale=car_ecart) < 0.6:
@@ -113,18 +113,26 @@ def couleur(tabl,colo=None):
 		rd_col += 360
 	while rd_col > 360:
 		rd_col -= 360
+	mean=list(mean)
+	
+	return list(clrs.hls_to_rgb(rd_col,mean[1],mean[2])),chx_dist[0],op[chx_dist[0]]
 
-	return clrs.hls_to_rgb(rd_col,mean[1],mean[2]),chx_dist,op[chx_dist]
-	
-	
+
 
 def mouvement(x_dep,y_dep):
 	"""Ce bout de code sert à définir les coordonnées x et y d'arrivée et donne deux vecteur qui nous permettrons de
 	produire le déplacement"""
-	esp_choix=range(-0.7,0.7) #Ici on a les limites de l'espace de coordonées cartésiennes
+	esp_choix=np.linspace(-0.7,0.7) #Ici on a les limites de l'espace de coordonées cartésiennes
 	x_coord = random.choice(esp_choix) # Ici on choisit une coordonées "x" et une "y" au hasard qui seront les points d'arrivé
 	y_coord = random.choice(esp_choix)
-	mouv_x = np.arrange(x_dep,x_coord,0.01) #Ici on produit deux vecteur avec les valeurs intermédiaires par lesquelles
-	mouv_y = np.arrange(y_dep,y_coord,((y_dep-y_coord)/len(mouv_x)))	#les objets doivent passer
+	mouv_x = np.linspace(x_dep,x_coord) #Ici on produit deux vecteur avec les valeurs intermédiaires par lesquelles
+	mouv_y = np.linspace(y_dep,y_coord)	#les objets doivent passer
 	
 	return mouv_x,mouv_y
+
+def test_central(proc,ret_coul,touche):
+	if proc == 1:
+		if 'space' in touche:
+			
+	else:
+		pass
